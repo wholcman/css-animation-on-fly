@@ -1,0 +1,95 @@
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="style.css" type="text/css">
+	</head>
+	<body>
+		<div id="test">click</div>
+	</body>
+	<script src="ease.js"></script>
+	<script src="gl-matrix/common.js"></script>
+	<script src="gl-matrix/mat4.js"></script>
+	<script src="gl-matrix/vec3.js"></script>
+	<script src="slerp.js"></script>
+	<script src="gl-matrix/decompose.js"></script>
+	<script src="gl-matrix/recompose.js"></script>
+	<script src="gl-matrix/interpolate.js"></script>
+	<script src="cssTransformToMatrix.js"></script>
+	<script>
+
+		var prefix;
+		prefix = (function () {
+			var regex = /^(Webkit|Moz|ms|O)(?=[A-Z])/;
+			var script = document.getElementsByTagName('script')[0].style;
+			for(var prop in script) {
+				if(regex.test(prop)) {
+					return prop.match(regex)[0];
+				}
+			}
+			if ("WebkitOpacity" in script) { return "Webkit"; }
+			if ("KhtmlOpacity" in script) { return "khtml"; }
+			return '';
+		})();
+
+		function createKeyframeCSS (keyframes, name) {
+			var str = "@-" + prefix + "-keyframes " + name + " {\n";
+			var fstr = null;
+			for(pos in keyframes) {
+				f = keyframes[pos];
+				fstr = '\t'+pos+' { -'+prefix+'-transform : matrix3d(';
+				
+				length = f.length
+				for(var p = 0; p < length; p++)
+					if(p == length - 1) {
+						fstr += f[p]+'';
+					}
+					else {
+						fstr += f[p]+',';
+					}
+
+				fstr += ");}\n";
+				str += fstr;
+
+			}
+			str += "}\n";
+			return str;
+		}
+
+		function addKeyframeRule(rule) {
+			if (document.styleSheets && document.styleSheets.length) {
+				document.styleSheets[0].insertRule(rule, 0);
+			}else {
+				var style = document.createElement('style');
+				style.innerHTML = rule;
+				document.head.appendChild(style);	
+			}
+		}
+
+		function test() {
+			var start = cssTransformToMatrix("translate3d(0px, 0px, 0)");
+			var end = cssTransformToMatrix("translate3d(300px, 100px, 0) rotate3d(1deg, 0, 0, 170deg)");
+
+			var keyframes = [];
+			for(var progress = 0; progress <= 1; progress+= 0.01) {
+				var out = glMatrix.mat4.create();
+				glMatrix.interpolate(out,start,end, expoInOut(progress));
+				keyframes[parseInt(progress*100, 10)+'%'] = out;
+			}
+
+			keyframes['100%'] = end;
+			keyframe = createKeyframeCSS(keyframes,"anim1");
+			addKeyframeRule(keyframe)
+
+			elem = document.getElementById('test');
+			elem.style[prefix + "AnimationDuration"] = "1500ms";
+			elem.style[prefix + "AnimationTimingFunction"] = 'linear';
+			elem.style[prefix + "AnimationName"] = "anim1";
+			elem.style[prefix + "AnimationFillMode"] = "forwards";
+		}
+
+		document.getElementById('test').addEventListener('click', function() {
+			test();
+		});
+
+	</script>
+</html>
